@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.venv
+dist
+*.cast
+coverage.xml
+.coverage
