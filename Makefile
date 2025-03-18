@@ -17,4 +17,4 @@ build:
 	./build.sh
 
 render-start:
-	pip install gunicorn && gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app
+	pip install gunicorn && /opt/render/.local/bin/gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app
