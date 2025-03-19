@@ -8,7 +8,21 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 
 @app.route('/')
-def hello_world():
+def index():
+    return render_template(
+        'index.html'
+    )
+
+
+@app.get('/urls')
+def urls_show():
+    return render_template(
+        'sites.html'
+    )
+
+
+@app.post('/urls')
+def urls_add():
     return render_template(
         'index.html'
     )
