@@ -13,7 +13,7 @@ def get_db_connection():
     return psycopg2.connect(os.getenv('DB_URL'))
 
 
-# Import controllers to register routes
-import page_analyzer.controllers.urls_controller
+if True:
+    import page_analyzer.controllers.urls_controller  # noqa: F401
 
 __all__ = ["app"]
