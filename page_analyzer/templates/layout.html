@@ -17,10 +17,20 @@
     </div>
     </nav>
   </header>
+  {% if errors %}
+  {% for _, error in errors.items() %}
+  <div class="alert alert-danger" role="alert">{{ error }}</div>
+  {% endfor %}
+  {% endif %}
+  {% if messages %}
+  {% for category, message in messages %}
+  <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+  {% endfor %}
+  {% endif %}
   <main class="flex-grow-1">
     <div class="container-lg mt-3">
       <h1>{% block title %}{% endblock %}</h1>
-    {% block content %}{% endblock %}
+      {% block content %}{% endblock %}
     </div>
   </main>
 </body>

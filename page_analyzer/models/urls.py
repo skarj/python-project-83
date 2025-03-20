@@ -16,6 +16,12 @@ class URLRepository:
         else:
             self._create(url)
 
+    def find_by_name(self, name):
+        with self.conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("SELECT * FROM urls WHERE name = %s", (name,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
     def _update(self, url):
         with self.conn.cursor() as cur:
             cur.execute(
@@ -33,13 +39,11 @@ class URLRepository:
 
     def _create(self, url):
         with self.conn.cursor() as cur:
-            cur.execute(
-                '''
+            cur.execute('''
                 INSERT INTO urls (name, created_at)
                 VALUES (%s, %s)
                 RETURNING id
-                ''',
-                (url['name'], url['created_at'])
+                ''', (url['name'], url['created_at'])
             )
             url_id = cur.fetchone()[0]
             url['id'] = url_id
