@@ -13,7 +13,7 @@ from page_analyzer.models.urls import URLRepository
 from page_analyzer.utils import normalize_url
 from validators.url import url as is_url
 
-repo = URLRepository(get_db_connection())
+repo = URLRepository(get_db_connection)
 
 
 @app.route('/')
