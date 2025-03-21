@@ -1,17 +1,17 @@
-from flask import (
-    request,
-    render_template,
-    flash,
-    redirect,
-    url_for,
-    get_flashed_messages
-)
 from datetime import datetime
-from validators.url import url
 
-from page_analyzer import app
+from flask import (
+    flash,
+    get_flashed_messages,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+from page_analyzer import app, get_db_connection
 from page_analyzer.models.urls import URLRepository
-from page_analyzer import get_db_connection
+from page_analyzer.utils import normalize_url
+from validators.url import url as is_url
 
 repo = URLRepository(get_db_connection())
 
@@ -35,30 +35,27 @@ def urls_get():
 
 @app.route('/urls', methods=['POST'])
 def urls_post():
-    data = request.form.to_dict()
+    input_data = request.form.to_dict()
+    url_name = input_data['url']
 
-    #  validation У URL обязательно должен быть валидный адрес,
-    #  не превышающий 255 символов
-    #  Для нормализации имени сайта используйте urlparse
-    #  if exists
-    errors = validate(data)
+    errors = validate(url_name)
 
     if not errors:
-        name = data['url']
-        url = repo.find_by_name(name)
+        url_normalized = normalize_url(url_name)
+        url_data = repo.find_by_name(url_normalized)
 
-        if not url:
-            url = {'name': data['url'], 'created_at': datetime.now()}
-            repo.save(url)
+        if not url_data:
+            url_data = {'name': url_normalized, 'created_at': datetime.now()}
+            repo.save(url_data)
             flash('Страница успешно добавлена', 'success')
         else:
             flash('Страница уже существует', 'info')
 
-        return redirect(url_for('urls_show', id=url['id']))
+        return redirect(url_for('urls_show', id=url_data['id']))
 
     return render_template(
         'index.html',
-        url=data.get('url'),
+        url=url_name,
         errors=errors
     ), 422
 
@@ -75,9 +72,9 @@ def urls_show(id):
     )
 
 
-def validate(data):
+def validate(url):
     errors = {}
-    if not url(data['url']):
+    if not is_url(url) or len(url) > 255:
         errors['name'] = 'Некорректный URL'
 
     return errors
