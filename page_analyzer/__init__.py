@@ -15,6 +15,7 @@ def get_db_connection():
 
 
 if True:
-    import page_analyzer.controllers.urls_controller  # noqa: F401
+    # is it correct?
+    from page_analyzer.controllers import urls  # noqa: F401
 
 __all__ = ["app"]

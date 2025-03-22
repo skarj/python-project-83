@@ -21,10 +21,10 @@
 </div>
 
 <h2 class="mt-5 mb-3">Проверки</h2>
-<form method="post" action="https://python-page-analyzer-ru.hexlet.app/urls/1/checks">
+<form method="post" action="{{ url_for('checks_post', id=url.id) }}">
   <input type="submit" class="btn btn-primary" value="Запустить проверку">
 </form>
-    
+
 <div>
   <table class="table table-bordered table-hover mt-2" data-test="checks">
     <thead>
@@ -38,6 +38,16 @@
       </tr>
     </thead>
     <tbody>
+      {% for check in checks %}
+      <tr>
+        <td>{{ check.id }}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>{{ check.created_at.date() }}</td>
+      </tr>
+      {% endfor %}
     </tbody>
   </table>
 </div>

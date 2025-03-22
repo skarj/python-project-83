@@ -8,7 +8,15 @@ class URLRepository:
     def list(self):
         with self.conn() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
-                cur.execute('SELECT * FROM urls')
+                cur.execute('''
+                    SELECT *,
+                        (SELECT created_at
+                            FROM url_checks
+                            WHERE url_id = url.id
+                            ORDER BY id DESC
+                            LIMIT 1) AS last_check
+                    FROM urls AS url
+                    ''')
                 return [dict(row) for row in cur]
 
     def save(self, url):

@@ -9,11 +9,13 @@ from flask import (
     url_for,
 )
 from page_analyzer import app, get_db_connection
+from page_analyzer.models.checks import CheckRepository
 from page_analyzer.models.urls import URLRepository
 from page_analyzer.utils import normalize_url
 from validators.url import url as is_url
 
-repo = URLRepository(get_db_connection)
+url_repo = URLRepository(get_db_connection)
+check_repo = CheckRepository(get_db_connection)
 
 
 @app.route('/')
@@ -25,7 +27,7 @@ def urls_index():
 
 @app.route('/urls')
 def urls_get():
-    urls = repo.list()
+    urls = url_repo.list()
 
     return render_template(
         'list.html',
@@ -42,11 +44,11 @@ def urls_post():
 
     if not errors:
         url_normalized = normalize_url(url_name)
-        url_data = repo.find_by_name(url_normalized)
+        url_data = url_repo.find_by_name(url_normalized)
 
         if not url_data:
             url_data = {'name': url_normalized, 'created_at': datetime.now()}
-            repo.save(url_data)
+            url_repo.save(url_data)
             flash('Страница успешно добавлена', 'success')
         else:
             flash('Страница уже существует', 'info')
@@ -62,14 +64,25 @@ def urls_post():
 
 @app.route('/urls/<id>')
 def urls_show(id):
-    url = repo.find(id)
+    url = url_repo.find(id)
     messages = get_flashed_messages(with_categories=True)
+    url_checks = check_repo.list_by_url_id(id)
 
     return render_template(
         'show.html',
         url=url,
+        checks=url_checks,
         messages=messages
     )
+
+
+@app.route('/urls/<id>/checks', methods=['POST'])
+def checks_post(id):
+    check_data = {'url_id': id, 'created_at': datetime.now()}
+    check_repo.save(check_data)
+    flash('Страница успешно проверена', 'success')
+
+    return redirect(url_for('urls_show', id=id))
 
 
 def validate(url):

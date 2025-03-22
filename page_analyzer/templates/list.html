@@ -20,7 +20,7 @@
               {{ url.name }}
             </a>
           </td>
-          <td></td>
+          <td>{{ url.last_check.date() if url.last_check if not None }}</td>
           <td></td>
         </tr>
         {% endfor %}
