@@ -2,6 +2,10 @@
 #    uv pip compile pyproject.toml -o requirements.txt
 blinker==1.9.0
     # via flask
+certifi==2025.1.31
+    # via requests
+charset-normalizer==3.4.1
+    # via requests
 click==8.1.8
     # via flask
 dotenv==0.9.9
@@ -10,6 +14,8 @@ flask==3.1.0
     # via hexlet-code (pyproject.toml)
 gunicorn==23.0.0
     # via hexlet-code (pyproject.toml)
+idna==3.10
+    # via requests
 itsdangerous==2.2.0
     # via flask
 jinja2==3.1.6
@@ -24,6 +30,10 @@ psycopg2-binary==2.9.10
     # via hexlet-code (pyproject.toml)
 python-dotenv==1.0.1
     # via dotenv
+requests==2.32.3
+    # via hexlet-code (pyproject.toml)
+urllib3==2.3.0
+    # via requests
 validators==0.34.0
     # via hexlet-code (pyproject.toml)
 werkzeug==3.1.3

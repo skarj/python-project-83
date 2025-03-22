@@ -9,13 +9,19 @@ class URLRepository:
         with self.conn() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute('''
-                    SELECT *,
-                        (SELECT created_at
-                            FROM url_checks
-                            WHERE url_id = url.id
-                            ORDER BY id DESC
-                            LIMIT 1) AS last_check
+                    SELECT
+                        url.*,
+                        latest_checks.last_check,
+                        latest_checks.status_code
                     FROM urls AS url
+                    LEFT JOIN (
+                        SELECT DISTINCT ON (url_id)
+                            url_id,
+                            created_at AS last_check,
+                            status_code
+                        FROM url_checks
+                        ORDER BY url_id, created_at DESC
+                    ) AS latest_checks ON url.id = latest_checks.url_id;
                     ''')
                 return [dict(row) for row in cur]
 

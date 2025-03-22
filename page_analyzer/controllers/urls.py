@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import requests
 from flask import (
     flash,
     get_flashed_messages,
@@ -64,13 +65,13 @@ def urls_post():
 
 @app.route('/urls/<id>')
 def urls_show(id):
-    url = url_repo.find(id)
+    url_data = url_repo.find(id)
     messages = get_flashed_messages(with_categories=True)
     url_checks = check_repo.list_by_url_id(id)
 
     return render_template(
         'show.html',
-        url=url,
+        url=url_data,
         checks=url_checks,
         messages=messages
     )
@@ -78,9 +79,19 @@ def urls_show(id):
 
 @app.route('/urls/<id>/checks', methods=['POST'])
 def checks_post(id):
-    check_data = {'url_id': id, 'created_at': datetime.now()}
-    check_repo.save(check_data)
-    flash('Страница успешно проверена', 'success')
+    url_data = url_repo.find(id)
+    status_code = check_site_availability(url_data['name'])
+
+    if status_code:
+        check_data = {
+            'url_id': id,
+            'status_code': status_code,
+            'created_at': datetime.now()
+        }
+        check_repo.save(check_data)
+        flash('Страница успешно проверена', 'success')
+    else:
+        flash('Произошла ошибка при проверке', 'danger')
 
     return redirect(url_for('urls_show', id=id))
 
@@ -91,3 +102,15 @@ def validate(url):
         errors['name'] = 'Некорректный URL'
 
     return errors
+
+
+# Move to another place?
+def check_site_availability(url):
+    try:
+        response = requests.get(url)
+        response_code = response.status_code
+        response.raise_for_status()
+        return response_code
+    except requests.exceptions.RequestException:
+        # Log?
+        return None

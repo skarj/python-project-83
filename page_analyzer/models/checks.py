@@ -19,10 +19,14 @@ class CheckRepository:
         with self.conn() as conn:
             with conn.cursor() as cur:
                 cur.execute('''
-                    INSERT INTO url_checks (url_id, created_at)
-                    VALUES (%s, %s)
+                    INSERT INTO url_checks (url_id, status_code, created_at)
+                    VALUES (%s, %s, %s)
                     RETURNING id
-                    ''', (check['url_id'], check['created_at'])
+                    ''', (
+                        check['url_id'],
+                        check['status_code'],
+                        check['created_at']
+                    )
                 )
                 check_id = cur.fetchone()[0]
                 check['id'] = check_id
