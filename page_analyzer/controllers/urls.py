@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import requests
 from flask import (
     flash,
     get_flashed_messages,
@@ -10,8 +9,9 @@ from flask import (
     url_for,
 )
 from page_analyzer import app, get_db_connection
-from page_analyzer.models.checks import CheckRepository
-from page_analyzer.models.urls import URLRepository
+from page_analyzer.models.check import CheckRepository
+from page_analyzer.models.site import Site
+from page_analyzer.models.url import URLRepository
 from page_analyzer.utils import normalize_url
 from validators.url import url as is_url
 
@@ -80,14 +80,22 @@ def urls_show(id):
 @app.route('/urls/<id>/checks', methods=['POST'])
 def checks_post(id):
     url_data = url_repo.find(id)
-    status_code = check_site_availability(url_data['name'])
+    site = Site(url_data['name'])
+    site.run_check()
 
-    if status_code:
+    if site.status_code:
+        h1 = site.get_h1()
+        title = site.get_title()
+        description = site.get_description()
         check_data = {
             'url_id': id,
-            'status_code': status_code,
+            'status_code': site.status_code,
+            'h1': h1,
+            'title': title,
+            'description': description,
             'created_at': datetime.now()
         }
+        print(check_data)
         check_repo.save(check_data)
         flash('Страница успешно проверена', 'success')
     else:
@@ -102,15 +110,3 @@ def validate(url):
         errors['name'] = 'Некорректный URL'
 
     return errors
-
-
-# Move to another place?
-def check_site_availability(url):
-    try:
-        response = requests.get(url)
-        response_code = response.status_code
-        response.raise_for_status()
-        return response_code
-    except requests.exceptions.RequestException:
-        # Log?
-        return None
