@@ -11,7 +11,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 
 def get_db_connection():
-    return psycopg2.connect(os.getenv('DB_URL'))
+    return psycopg2.connect(os.getenv('DATABASE_URL'))
 
 
 if True:

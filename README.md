@@ -34,7 +34,7 @@ make install
 ### Put secrets to .env file
 ```
 echo SECRET_KEY="{flask_secret_key}"
-echo DB_URL="postgresql://{user}:{password}@127.0.0.1:5432/sites"
+echo DATABASE_URL="postgresql://{user}:{password}@127.0.0.1:5432/sites"
 ```
 
 ### Start local Postgresql database
@@ -46,7 +46,7 @@ docker run --name postgres16 \
   -p 5432:5432 \
   -d postgres:16
 
-psql -a -d $DB_URL -f database.sql
+psql -a -d $DATABASE_URL -f database.sql
 ```
 
 ### Start development application
