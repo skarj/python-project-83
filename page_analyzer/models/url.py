@@ -68,4 +68,3 @@ class URLRepository:
                 url['id'] = url_id
 
             conn.commit()
-        #  https://github.com/hexlet-components/python-flask-example/blob/database/user_repository.py#L41

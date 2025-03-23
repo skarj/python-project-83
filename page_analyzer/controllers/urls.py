@@ -9,8 +9,7 @@ from flask import (
     url_for,
 )
 from page_analyzer import app, get_db_connection
-from page_analyzer.models.check import CheckRepository
-from page_analyzer.models.site import Site
+from page_analyzer.models.check import Check, CheckRepository
 from page_analyzer.models.url import URLRepository
 from page_analyzer.utils import normalize_url
 from validators.url import url as is_url
@@ -80,16 +79,16 @@ def urls_show(id):
 @app.route('/urls/<id>/checks', methods=['POST'])
 def checks_post(id):
     url_data = url_repo.find(id)
-    site = Site(url_data['name'])
-    site.run_check()
+    check = Check(url_data['name'])
+    check.run_check()
 
-    if site.status_code:
-        h1 = site.get_h1()
-        title = site.get_title()
-        description = site.get_description()
+    if check.status_code:
+        h1 = check.get_h1()
+        title = check.get_title()
+        description = check.get_description()
         check_data = {
             'url_id': id,
-            'status_code': site.status_code,
+            'status_code': check.status_code,
             'h1': h1,
             'title': title,
             'description': description,
