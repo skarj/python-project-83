@@ -37,7 +37,7 @@ echo SECRET_KEY="{flask_secret_key}"
 echo DB_URL="postgresql://{user}:{password}@127.0.0.1:5432/sites"
 ```
 
-# Start local Postgresql database
+### Start local Postgresql database
 ```
 docker run --name postgres16 \
   -e POSTGRES_USER=appuser \
