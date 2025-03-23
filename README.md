@@ -1,4 +1,4 @@
-[![Maintainability](https://api.codeclimate.com/v1/badges/e3ca9c69384cf7c1a059/maintainability)](https://codeclimate.com/github/skarj/python-project-50/maintainability)x
+[![Maintainability](https://api.codeclimate.com/v1/badges/e3ca9c69384cf7c1a059/maintainability)](https://codeclimate.com/github/skarj/python-project-50/maintainability)
 [![Actions Status](https://github.com/skarj/python-project-83/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/skarj/python-project-83/actions)
 
 # Page Analyzer
