@@ -66,7 +66,7 @@ def urls_post():
 def urls_show(id):
     url_data = url_repo.find(id)
     messages = get_flashed_messages(with_categories=True)
-    url_checks = check_repo.list_by_url_id(id)
+    url_checks = check_repo.get_all_by_url_id(id)
 
     return render_template(
         'show.html',

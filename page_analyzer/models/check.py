@@ -7,7 +7,7 @@ class CheckRepository:
     def __init__(self, conn):
         self.conn = conn
 
-    def list_by_url_id(self, url_id):
+    def get_all_by_url_id(self, url_id):
         with self.conn() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute('''
