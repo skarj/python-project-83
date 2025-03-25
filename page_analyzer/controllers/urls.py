@@ -94,7 +94,6 @@ def checks_post(id):
             'description': description,
             'created_at': datetime.now()
         }
-        print(check_data)
         check_repo.save(check_data)
         flash('Страница успешно проверена', 'success')
     else:
