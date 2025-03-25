@@ -1,6 +1,11 @@
+import os
 from datetime import datetime
+from urllib.parse import urlparse
 
+import psycopg2
+from dotenv import load_dotenv
 from flask import (
+    Flask,
     flash,
     get_flashed_messages,
     redirect,
@@ -8,11 +13,19 @@ from flask import (
     request,
     url_for,
 )
-from page_analyzer import app, get_db_connection
 from page_analyzer.models.check import Check, CheckRepository
 from page_analyzer.models.url import URLRepository
-from page_analyzer.utils import normalize_url
 from validators.url import url as is_url
+
+load_dotenv()
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+
+
+def get_db_connection():
+    return psycopg2.connect(os.getenv('DATABASE_URL'))
+
 
 url_repo = URLRepository(get_db_connection)
 check_repo = CheckRepository(get_db_connection)
@@ -108,3 +121,12 @@ def validate(url):
         errors['name'] = 'Некорректный URL'
 
     return errors
+
+
+def normalize_url(url):
+    parsed = urlparse(url)
+
+    scheme = parsed.scheme.lower()
+    netloc = parsed.netloc.lower()
+
+    return f"{scheme}://{netloc}"
