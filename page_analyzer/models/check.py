@@ -17,7 +17,7 @@ class CheckRepository:
                     ''', (url_id,))
                 return [dict(row) for row in cur]
 
-    def save(self, check):
+    def create(self, check):
         with self.conn() as conn:
             with conn.cursor() as cur:
                 cur.execute('''

@@ -94,7 +94,7 @@ def checks_post(id):
             'description': description,
             'created_at': datetime.now()
         }
-        check_repo.save(check_data)
+        check_repo.create(check_data)
         flash('Страница успешно проверена', 'success')
     else:
         flash('Произошла ошибка при проверке', 'danger')
