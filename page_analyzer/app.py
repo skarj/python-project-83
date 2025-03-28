@@ -3,6 +3,8 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 import psycopg2
+import requests
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -13,22 +15,29 @@ from flask import (
     request,
     url_for,
 )
-from page_analyzer.models.check import Check, CheckRepository
-from page_analyzer.models.url import URLRepository
+from page_analyzer.db import (
+    URL,
+    Response,
+    URLCheck,
+    create_url,
+    create_url_check,
+    get_all_checks,
+    get_all_urls,
+    get_checks_for_url,
+    get_url_by_id,
+    get_url_by_name,
+)
 from validators.url import url as is_url
 
 load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 
-def get_db_connection():
-    return psycopg2.connect(os.getenv('DATABASE_URL'))
-
-
-url_repo = URLRepository(get_db_connection)
-check_repo = CheckRepository(get_db_connection)
+def connection(db_url):
+    return psycopg2.connect(db_url)
 
 
 @app.route('/')
@@ -40,11 +49,21 @@ def urls_index():
 
 @app.route('/urls')
 def urls_get():
-    urls = url_repo.list()
+    with connection(DATABASE_URL) as conn:
+        all_urls: list[URL] = get_all_urls(conn)
+        latest_url_checks: dict[int, URLCheck] = {
+            c.url_id: c for c in sorted(get_all_checks(conn), key=lambda x: (x.id, x.created_at))
+        }
 
     return render_template(
         'list.html',
-        urls=urls
+        urls=[
+            {
+                'url': url,
+                'url_check': latest_url_checks.get(url.id),
+            }
+            for url in all_urls
+        ]
     )
 
 
@@ -52,16 +71,18 @@ def urls_get():
 def urls_post():
     input_data = request.form.to_dict()
     url_name = input_data['url']
-
-    errors = validate(url_name)
+    errors = validate_url(url_name)
 
     if not errors:
         url_normalized = normalize_url(url_name)
-        url_data = url_repo.find_by_name(url_normalized)
+        with connection(DATABASE_URL) as conn:
+            url_data = get_url_by_name(conn, url_normalized)
 
         if not url_data:
             url_data = {'name': url_normalized, 'created_at': datetime.now()}
-            url_repo.save(url_data)
+            with connection(DATABASE_URL) as conn:
+                create_url(conn, url_data)
+
             flash('Страница успешно добавлена', 'success')
         else:
             flash('Страница уже существует', 'info')
@@ -77,9 +98,11 @@ def urls_post():
 
 @app.route('/urls/<id>')
 def urls_show(id):
-    url_data = url_repo.find(id)
+    with connection(DATABASE_URL) as conn:
+        url_data = get_url_by_id(conn, id)
+        url_checks = get_checks_for_url(conn, id)
+
     messages = get_flashed_messages(with_categories=True)
-    url_checks = check_repo.get_all_by_url_id(id)
 
     return render_template(
         'show.html',
@@ -91,23 +114,30 @@ def urls_show(id):
 
 @app.route('/urls/<id>/checks', methods=['POST'])
 def checks_post(id):
-    url_data = url_repo.find(id)
-    check = Check(url_data['name'])
-    check.run_check()
+    with connection(DATABASE_URL) as conn:
+        url = get_url_by_id(conn, id)
 
-    if check.status_code:
-        h1 = check.get_h1()
-        title = check.get_title()
-        description = check.get_description()
-        check_data = {
-            'url_id': id,
-            'status_code': check.status_code,
-            'h1': h1,
-            'title': title,
-            'description': description,
-            'created_at': datetime.now()
-        }
-        check_repo.create(check_data)
+    try:
+        resp = requests.get(url.name)
+        resp.raise_for_status()
+        response = Response(content = resp.content, status_code = resp.status_code)
+    except requests.exceptions.RequestException:
+        pass
+
+    h1, title, description = get_seo_content(response.content)
+    url_check = URLCheck(
+        url_id=url.id,
+        h1=h1,
+        title=title,
+        description=description,
+        status_code=response.status_code,
+        created_at=datetime.now()
+    )
+
+    if response.status_code:
+        with connection(DATABASE_URL) as conn:
+            create_url_check(conn, url_check)
+
         flash('Страница успешно проверена', 'success')
     else:
         flash('Произошла ошибка при проверке', 'danger')
@@ -115,7 +145,7 @@ def checks_post(id):
     return redirect(url_for('urls_show', id=id))
 
 
-def validate(url):
+def validate_url(url):
     errors = {}
     if not is_url(url) or len(url) > 255:
         errors['name'] = 'Некорректный URL'
@@ -130,3 +160,17 @@ def normalize_url(url):
     netloc = parsed.netloc.lower()
 
     return f"{scheme}://{netloc}"
+
+
+def get_seo_content(content):
+    content = BeautifulSoup(content, 'html.parser')
+
+    meta_description = content.find(
+        "meta", attrs={"name": "description"}
+    )
+
+    return (
+        content.h1.string if content.h1 else None,
+        content.title.string if content.title else None,
+        meta_description['content'] if meta_description else None,
+    )
