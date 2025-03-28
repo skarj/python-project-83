@@ -76,18 +76,21 @@ def urls_post():
     if not errors:
         url_normalized = normalize_url(url_name)
         with connection(DATABASE_URL) as conn:
-            url_data = get_url_by_name(conn, url_normalized)
+            url = get_url_by_name(conn, url_normalized)
 
-        if not url_data:
-            url_data = {'name': url_normalized, 'created_at': datetime.now()}
+        if not url:
+            url = URL(
+                name=url_normalized,
+                created_at=datetime.now()
+            )
             with connection(DATABASE_URL) as conn:
-                create_url(conn, url_data)
+                create_url(conn, url)
 
             flash('Страница успешно добавлена', 'success')
         else:
             flash('Страница уже существует', 'info')
 
-        return redirect(url_for('urls_show', id=url_data['id']))
+        return redirect(url_for('urls_show', id=url.id))
 
     return render_template(
         'index.html',
@@ -99,14 +102,14 @@ def urls_post():
 @app.route('/urls/<id>')
 def urls_show(id):
     with connection(DATABASE_URL) as conn:
-        url_data = get_url_by_id(conn, id)
-        url_checks = get_checks_for_url(conn, id)
+        url = get_url_by_id(conn, id)
+        url_checks = get_checks_for_url(conn, url.id)
 
     messages = get_flashed_messages(with_categories=True)
 
     return render_template(
         'show.html',
-        url=url_data,
+        url=url,
         checks=url_checks,
         messages=messages
     )

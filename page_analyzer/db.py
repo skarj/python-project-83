@@ -71,10 +71,10 @@ def create_url(conn, url):
             INSERT INTO urls (name, created_at)
             VALUES (%s, %s)
             RETURNING id
-            ''', (url['name'], url['created_at'])
+            ''', (url.name, url.created_at)
         )
         url_id = cur.fetchone()[0]
-        url['id'] = url_id
+        url.id = url_id
 
     conn.commit()
 
