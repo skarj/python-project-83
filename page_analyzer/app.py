@@ -117,24 +117,20 @@ def checks_post(id):
     with connection(DATABASE_URL) as conn:
         url = get_url_by_id(conn, id)
 
-    try:
-        resp = requests.get(url.name)
-        resp.raise_for_status()
-        response = Response(content = resp.content, status_code = resp.status_code)
-    except requests.exceptions.RequestException:
-        pass
+    response = get_response(url.name)
 
-    h1, title, description = get_seo_content(response.content)
-    url_check = URLCheck(
-        url_id=url.id,
-        h1=h1,
-        title=title,
-        description=description,
-        status_code=response.status_code,
-        created_at=datetime.now()
-    )
+    if response:
+        h1, title, description = get_seo_content(response.content)
 
-    if response.status_code:
+        url_check = URLCheck(
+            url_id=url.id,
+            h1=h1,
+            title=title,
+            description=description,
+            status_code=response.status_code,
+            created_at=datetime.now()
+        )
+
         with connection(DATABASE_URL) as conn:
             create_url_check(conn, url_check)
 
@@ -174,3 +170,17 @@ def get_seo_content(content):
         content.title.string if content.title else None,
         meta_description['content'] if meta_description else None,
     )
+
+
+def get_response(url_name):
+    try:
+        resp = requests.get(url_name)
+        resp.raise_for_status()
+        return Response(
+            content=resp.content,
+            status_code=resp.status_code
+        )
+    except requests.exceptions.RequestException:
+        pass
+
+    return None
