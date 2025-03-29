@@ -1,31 +1,11 @@
-import dataclasses
-from datetime import datetime
-
+import psycopg2
 from psycopg2.extras import DictCursor
 
-
-@dataclasses.dataclass
-class URLCheck:
-    url_id: int
-    status_code: int
-    h1: str
-    title: str
-    description: str
-    created_at: datetime
-    id: int | None = None
+from .models import URL, URLCheck
 
 
-@dataclasses.dataclass
-class URL:
-    name: str
-    created_at: datetime
-    id: int | None = None
-
-
-@dataclasses.dataclass
-class Response:
-    status_code: str
-    content: str
+def connection(db_url):
+    return psycopg2.connect(db_url)
 
 
 def get_all_urls(conn):

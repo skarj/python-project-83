@@ -2,7 +2,6 @@ import os
 from datetime import datetime
 from urllib.parse import urlparse
 
-import psycopg2
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -15,29 +14,16 @@ from flask import (
     request,
     url_for,
 )
-from page_analyzer.db import (
-    URL,
-    Response,
-    URLCheck,
-    create_url,
-    create_url_check,
-    get_all_checks,
-    get_all_urls,
-    get_checks_for_url,
-    get_url_by_id,
-    get_url_by_name,
-)
+from page_analyzer import db
 from validators.url import url as is_url
+
+from .models import URL, Response, URLCheck
 
 load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 DATABASE_URL = os.environ.get('DATABASE_URL')
-
-
-def connection(db_url):
-    return psycopg2.connect(db_url)
 
 
 @app.route('/')
@@ -49,10 +35,10 @@ def urls_index():
 
 @app.route('/urls')
 def urls_get():
-    with connection(DATABASE_URL) as conn:
-        all_urls: list[URL] = get_all_urls(conn)
+    with db.connection(DATABASE_URL) as conn:
+        all_urls: list[URL] = db.get_all_urls(conn)
         latest_url_checks: dict[int, URLCheck] = {
-            c.url_id: c for c in sorted(get_all_checks(conn), key=lambda x: (x.id, x.created_at))
+            c.url_id: c for c in sorted(db.get_all_checks(conn), key=lambda x: (x.id, x.created_at))
         }
 
     return render_template(
@@ -75,16 +61,16 @@ def urls_post():
 
     if not errors:
         url_normalized = normalize_url(url_name)
-        with connection(DATABASE_URL) as conn:
-            url = get_url_by_name(conn, url_normalized)
+        with db.connection(DATABASE_URL) as conn:
+            url = db.get_url_by_name(conn, url_normalized)
 
         if not url:
             url = URL(
                 name=url_normalized,
                 created_at=datetime.now()
             )
-            with connection(DATABASE_URL) as conn:
-                create_url(conn, url)
+            with db.connection(DATABASE_URL) as conn:
+                db.create_url(conn, url)
 
             flash('Страница успешно добавлена', 'success')
         else:
@@ -101,9 +87,9 @@ def urls_post():
 
 @app.route('/urls/<id>')
 def urls_show(id):
-    with connection(DATABASE_URL) as conn:
-        url = get_url_by_id(conn, id)
-        url_checks = get_checks_for_url(conn, url.id)
+    with db.connection(DATABASE_URL) as conn:
+        url = db.get_url_by_id(conn, id)
+        url_checks = db.get_checks_for_url(conn, url.id)
 
     messages = get_flashed_messages(with_categories=True)
 
@@ -117,8 +103,8 @@ def urls_show(id):
 
 @app.route('/urls/<id>/checks', methods=['POST'])
 def checks_post(id):
-    with connection(DATABASE_URL) as conn:
-        url = get_url_by_id(conn, id)
+    with db.connection(DATABASE_URL) as conn:
+        url = db.get_url_by_id(conn, id)
 
     response = get_response(url.name)
 
@@ -134,8 +120,8 @@ def checks_post(id):
             created_at=datetime.now()
         )
 
-        with connection(DATABASE_URL) as conn:
-            create_url_check(conn, url_check)
+        with db.connection(DATABASE_URL) as conn:
+            db.create_url_check(conn, url_check)
 
         flash('Страница успешно проверена', 'success')
     else:
