@@ -2,8 +2,6 @@ import os
 from datetime import datetime
 from urllib.parse import urlparse
 
-import requests
-from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -14,7 +12,7 @@ from flask import (
     request,
     url_for,
 )
-from page_analyzer import db
+from page_analyzer import db, http
 from validators.url import url as is_url
 
 from .models import URL, Response, URLCheck
@@ -106,10 +104,10 @@ def checks_post(id):
     with db.connection(DATABASE_URL) as conn:
         url = db.get_url_by_id(conn, id)
 
-    response = get_response(url.name)
+    response = http.get_response(url.name)
 
     if response:
-        h1, title, description = get_seo_content(response.content)
+        h1, title, description = http.get_seo_content(response.content)
 
         url_check = URLCheck(
             url_id=url.id,
@@ -146,30 +144,3 @@ def normalize_url(url):
 
     return f"{scheme}://{netloc}"
 
-
-def get_seo_content(content):
-    content = BeautifulSoup(content, 'html.parser')
-
-    meta_description = content.find(
-        "meta", attrs={"name": "description"}
-    )
-
-    return (
-        content.h1.string if content.h1 else None,
-        content.title.string if content.title else None,
-        meta_description['content'] if meta_description else None,
-    )
-
-
-def get_response(url_name):
-    try:
-        resp = requests.get(url_name)
-        resp.raise_for_status()
-        return Response(
-            content=resp.content,
-            status_code=resp.status_code
-        )
-    except requests.exceptions.RequestException:
-        pass
-
-    return None
