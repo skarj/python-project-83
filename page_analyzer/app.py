@@ -67,14 +67,13 @@ def urls_post():
         with db.connection(DATABASE_URL) as conn:
             url = db.get_url_by_name(conn, url_normalized)
 
-        if not url:
-            url = URL(name=url_normalized)
-            with db.connection(DATABASE_URL) as conn:
+            if not url:
+                url = URL(name=url_normalized)
                 db.create_url(conn, url)
 
-            flash('Страница успешно добавлена', 'success')
-        else:
-            flash('Страница уже существует', 'info')
+                flash('Страница успешно добавлена', 'success')
+            else:
+                flash('Страница уже существует', 'info')
 
         return redirect(url_for('urls_show', id=url.id))
 

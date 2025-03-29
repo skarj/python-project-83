@@ -20,9 +20,3 @@ class URL:
     created_at: datetime = field(
         default_factory=lambda: datetime.now(timezone.utc))
     id: int | None = None
-
-
-@dataclass
-class Response:
-    status_code: str
-    content: str

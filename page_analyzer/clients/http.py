@@ -1,6 +1,12 @@
+from dataclasses import dataclass
+
 import requests
 
-from ..models import Response
+
+@dataclass
+class Response:
+    status_code: str
+    content: str
 
 
 def get_response(url_name):
