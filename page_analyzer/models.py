@@ -1,26 +1,28 @@
-import dataclasses
-from datetime import datetime
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 
-@dataclasses.dataclass
+@dataclass
 class URLCheck:
     url_id: int
     status_code: int
     h1: str
     title: str
     description: str
-    created_at: datetime
+    created_at: datetime = field(
+        default_factory=lambda: datetime.now(timezone.utc))
     id: int | None = None
 
 
-@dataclasses.dataclass
+@dataclass
 class URL:
     name: str
-    created_at: datetime
+    created_at: datetime = field(
+        default_factory=lambda: datetime.now(timezone.utc))
     id: int | None = None
 
 
-@dataclasses.dataclass
+@dataclass
 class Response:
     status_code: str
     content: str

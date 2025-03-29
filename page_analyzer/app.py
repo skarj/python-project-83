@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -69,10 +68,7 @@ def urls_post():
             url = db.get_url_by_name(conn, url_normalized)
 
         if not url:
-            url = URL(
-                name=url_normalized,
-                created_at=datetime.now()
-            )
+            url = URL(name=url_normalized)
             with db.connection(DATABASE_URL) as conn:
                 db.create_url(conn, url)
 
@@ -127,8 +123,7 @@ def checks_post(id):
             h1=h1,
             title=title,
             description=description,
-            status_code=response.status_code,
-            created_at=datetime.now()
+            status_code=response.status_code
         )
 
         with db.connection(DATABASE_URL) as conn:

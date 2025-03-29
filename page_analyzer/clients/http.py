@@ -11,7 +11,7 @@ def get_response(url_name):
             content=resp.content,
             status_code=resp.status_code
         )
-    except requests.exceptions.RequestException:
+    except requests.RequestException:
         pass
 
     return None
