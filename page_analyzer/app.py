@@ -5,15 +5,17 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 from flask import (
     Flask,
+    abort,
     flash,
     get_flashed_messages,
     redirect,
     render_template,
     request,
     url_for,
-    abort
 )
-from page_analyzer import db, http
+from page_analyzer import db
+from page_analyzer.clients import http
+from page_analyzer.parsers import html
 from validators.url import url as is_url
 
 from .models import URL, URLCheck
@@ -118,7 +120,7 @@ def checks_post(id):
     response = http.get_response(url.name)
 
     if response:
-        h1, title, description = http.get_seo_content(response.content)
+        h1, title, description = html.get_seo_content(response.content)
 
         url_check = URLCheck(
             url_id=url.id,
