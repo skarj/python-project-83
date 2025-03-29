@@ -11,6 +11,7 @@ from flask import (
     render_template,
     request,
     url_for,
+    abort
 )
 from page_analyzer import db, http
 from validators.url import url as is_url
@@ -90,6 +91,10 @@ def urls_post():
 def urls_show(id):
     with db.connection(DATABASE_URL) as conn:
         url = db.get_url_by_id(conn, id)
+
+        if not url:
+            abort(404)
+
         url_checks = db.get_checks_for_url(conn, url.id)
 
     messages = get_flashed_messages(with_categories=True)
@@ -106,6 +111,9 @@ def urls_show(id):
 def checks_post(id):
     with db.connection(DATABASE_URL) as conn:
         url = db.get_url_by_id(conn, id)
+
+    if not url:
+        abort(404)
 
     response = http.get_response(url.name)
 
