@@ -15,7 +15,7 @@ from flask import (
 from page_analyzer import db, http
 from validators.url import url as is_url
 
-from .models import URL, Response, URLCheck
+from .models import URL, URLCheck
 
 load_dotenv()
 
@@ -36,7 +36,10 @@ def urls_get():
     with db.connection(DATABASE_URL) as conn:
         all_urls: list[URL] = db.get_all_urls(conn)
         latest_url_checks: dict[int, URLCheck] = {
-            c.url_id: c for c in sorted(db.get_all_checks(conn), key=lambda x: (x.id, x.created_at))
+            c.url_id: c for c in sorted(
+                db.get_all_checks(conn),
+                key=lambda x: (x.id, x.created_at)
+            )
         }
 
     return render_template(
@@ -143,4 +146,3 @@ def normalize_url(url):
     netloc = parsed.netloc.lower()
 
     return f"{scheme}://{netloc}"
-

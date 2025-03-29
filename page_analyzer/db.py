@@ -35,7 +35,6 @@ def get_checks_for_url(conn, url_id):
             FROM url_checks
             WHERE url_id = %s
         ''', (url_id,))
-        row = cur.fetchone()
         return [URLCheck(**row) for row in cur]
 
 
