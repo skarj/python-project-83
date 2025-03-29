@@ -1,11 +1,10 @@
 import os
-from datetime import datetime
 from urllib.parse import urlparse
 
-import psycopg2
 from dotenv import load_dotenv
 from flask import (
     Flask,
+    abort,
     flash,
     get_flashed_messages,
     redirect,
@@ -13,22 +12,18 @@ from flask import (
     request,
     url_for,
 )
-from page_analyzer.models.check import Check, CheckRepository
-from page_analyzer.models.url import URLRepository
+from page_analyzer import db
+from page_analyzer.clients import http
+from page_analyzer.parsers import html
 from validators.url import url as is_url
+
+from .models import URL, URLCheck
 
 load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-
-
-def get_db_connection():
-    return psycopg2.connect(os.getenv('DATABASE_URL'))
-
-
-url_repo = URLRepository(get_db_connection)
-check_repo = CheckRepository(get_db_connection)
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 
 @app.route('/')
@@ -40,11 +35,24 @@ def urls_index():
 
 @app.route('/urls')
 def urls_get():
-    urls = url_repo.list()
+    with db.connection(DATABASE_URL) as conn:
+        all_urls: list[URL] = db.get_all_urls(conn)
+        latest_url_checks: dict[int, URLCheck] = {
+            c.url_id: c for c in sorted(
+                db.get_all_checks(conn),
+                key=lambda x: (x.id, x.created_at)
+            )
+        }
 
     return render_template(
         'list.html',
-        urls=urls
+        urls=[
+            {
+                'url': url,
+                'url_check': latest_url_checks.get(url.id),
+            }
+            for url in all_urls
+        ]
     )
 
 
@@ -52,21 +60,22 @@ def urls_get():
 def urls_post():
     input_data = request.form.to_dict()
     url_name = input_data['url']
-
-    errors = validate(url_name)
+    errors = validate_url(url_name)
 
     if not errors:
         url_normalized = normalize_url(url_name)
-        url_data = url_repo.find_by_name(url_normalized)
+        with db.connection(DATABASE_URL) as conn:
+            url = db.get_url_by_name(conn, url_normalized)
 
-        if not url_data:
-            url_data = {'name': url_normalized, 'created_at': datetime.now()}
-            url_repo.save(url_data)
-            flash('Страница успешно добавлена', 'success')
-        else:
-            flash('Страница уже существует', 'info')
+            if not url:
+                url = URL(name=url_normalized)
+                db.create_url(conn, url)
 
-        return redirect(url_for('urls_show', id=url_data['id']))
+                flash('Страница успешно добавлена', 'success')
+            else:
+                flash('Страница уже существует', 'info')
+
+        return redirect(url_for('urls_show', id=url.id))
 
     return render_template(
         'index.html',
@@ -77,13 +86,19 @@ def urls_post():
 
 @app.route('/urls/<id>')
 def urls_show(id):
-    url_data = url_repo.find(id)
+    with db.connection(DATABASE_URL) as conn:
+        url = db.get_url_by_id(conn, id)
+
+        if not url:
+            abort(404)
+
+        url_checks = db.get_checks_for_url(conn, url.id)
+
     messages = get_flashed_messages(with_categories=True)
-    url_checks = check_repo.get_all_by_url_id(id)
 
     return render_template(
         'show.html',
-        url=url_data,
+        url=url,
         checks=url_checks,
         messages=messages
     )
@@ -91,23 +106,28 @@ def urls_show(id):
 
 @app.route('/urls/<id>/checks', methods=['POST'])
 def checks_post(id):
-    url_data = url_repo.find(id)
-    check = Check(url_data['name'])
-    check.run_check()
+    with db.connection(DATABASE_URL) as conn:
+        url = db.get_url_by_id(conn, id)
 
-    if check.status_code:
-        h1 = check.get_h1()
-        title = check.get_title()
-        description = check.get_description()
-        check_data = {
-            'url_id': id,
-            'status_code': check.status_code,
-            'h1': h1,
-            'title': title,
-            'description': description,
-            'created_at': datetime.now()
-        }
-        check_repo.create(check_data)
+    if not url:
+        abort(404)
+
+    response = http.get_response(url.name)
+
+    if response:
+        h1, title, description = html.get_seo_content(response.content)
+
+        url_check = URLCheck(
+            url_id=url.id,
+            h1=h1,
+            title=title,
+            description=description,
+            status_code=response.status_code
+        )
+
+        with db.connection(DATABASE_URL) as conn:
+            db.create_url_check(conn, url_check)
+
         flash('Страница успешно проверена', 'success')
     else:
         flash('Произошла ошибка при проверке', 'danger')
@@ -115,7 +135,7 @@ def checks_post(id):
     return redirect(url_for('urls_show', id=id))
 
 
-def validate(url):
+def validate_url(url):
     errors = {}
     if not is_url(url) or len(url) > 255:
         errors['name'] = 'Некорректный URL'
