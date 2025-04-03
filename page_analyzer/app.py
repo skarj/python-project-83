@@ -103,7 +103,7 @@ def urls_show(id):
     )
 
 
-@app.route('/urls/<id>/checks', methods=['POST'])
+@app.route('/urls/<int:id>/checks', methods=['POST'])
 def checks_post(id):
     with db.connection(DATABASE_URL) as conn:
         url = get_url_or_404(conn, id)

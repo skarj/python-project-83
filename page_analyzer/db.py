@@ -55,7 +55,6 @@ def create_url(conn, url):
         url_id = cur.fetchone()[0]
         url.id = url_id
 
-    conn.commit()
     return url
 
 
@@ -84,4 +83,4 @@ def create_url_check(conn, url_check):
         check_id = cur.fetchone()[0]
         url_check.id = check_id
 
-    conn.commit()
+    return url_check
