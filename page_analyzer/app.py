@@ -1,5 +1,4 @@
 import os
-from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from flask import (
@@ -16,6 +15,7 @@ from flask import (
 from page_analyzer import db
 from page_analyzer.clients import http
 from page_analyzer.parsers import html
+from page_analyzer.url_utils import normalize_url
 from validators.url import url as is_url
 
 from .models import URL, URLCheck
@@ -137,15 +137,6 @@ def validate_url(url):
         errors['name'] = 'Некорректный URL'
 
     return errors
-
-
-def normalize_url(url):
-    parsed = urlparse(url)
-
-    scheme = parsed.scheme.lower()
-    netloc = parsed.netloc.lower()
-
-    return f"{scheme}://{netloc}"
 
 
 def get_url_or_404(conn, id):
