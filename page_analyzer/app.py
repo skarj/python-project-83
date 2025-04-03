@@ -84,7 +84,7 @@ def urls_post():
     ), 422
 
 
-@app.route('/urls/<id>')
+@app.route('/urls/<int:id>')
 def urls_show(id):
     with db.connection(DATABASE_URL) as conn:
         url = db.get_url_by_id(conn, id)
