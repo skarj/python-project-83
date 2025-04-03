@@ -7,6 +7,7 @@ from flask import (
     abort,
     flash,
     get_flashed_messages,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -59,29 +60,32 @@ def urls_get():
 @app.route('/urls', methods=['POST'])
 def urls_post():
     input_data = request.form.to_dict()
-    url_name = input_data['url']
+    url_name = input_data.get('url')
+
+    if not url_name:
+        return jsonify({"error": "URL name cannot be empty"}), 400
+
     errors = validate_url(url_name)
+    if errors:
+        return render_template(
+            'index.html',
+            url=url_name,
+            errors=errors
+        ), 422
 
-    if not errors:
-        url_normalized = normalize_url(url_name)
-        with db.connection(DATABASE_URL) as conn:
-            url = db.get_url_by_name(conn, url_normalized)
+    url_normalized = normalize_url(url_name)
+    with db.connection(DATABASE_URL) as conn:
+        url = db.get_url_by_name(conn, url_normalized)
 
-            if not url:
-                url = URL(name=url_normalized)
-                db.create_url(conn, url)
+        if not url:
+            url = URL(name=url_normalized)
+            db.create_url(conn, url)
 
-                flash('Страница успешно добавлена', 'success')
-            else:
-                flash('Страница уже существует', 'info')
+            flash('Страница успешно добавлена', 'success')
+        else:
+            flash('Страница уже существует', 'info')
 
-        return redirect(url_for('urls_show', id=url.id))
-
-    return render_template(
-        'index.html',
-        url=url_name,
-        errors=errors
-    ), 422
+    return redirect(url_for('urls_show', id=url.id))
 
 
 @app.route('/urls/<int:id>')
