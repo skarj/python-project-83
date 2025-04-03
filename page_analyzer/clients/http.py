@@ -9,7 +9,7 @@ class Response:
     content: str
 
 
-def get(url_name):
+def get(url_name, logger):
     try:
         resp = requests.get(url_name, timeout=10)
         resp.raise_for_status()
@@ -17,7 +17,7 @@ def get(url_name):
             content=resp.content,
             status_code=resp.status_code
         )
-    except requests.RequestException:
-        pass
+    except requests.RequestException as e:
+        logger.error(f"Error getting url: {str(e)}")
 
     return None

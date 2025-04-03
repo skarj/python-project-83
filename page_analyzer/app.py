@@ -78,8 +78,7 @@ def urls_post():
         url = db.get_url_by_name(conn, url_normalized)
 
         if not url:
-            url = URL(name=url_normalized)
-            db.create_url(conn, url)
+            url = db.create_url(conn, URL(name=url_normalized))
 
             flash('Страница успешно добавлена', 'success')
         else:
@@ -109,7 +108,7 @@ def checks_post(id):
     with db.connection(DATABASE_URL) as conn:
         url = get_url_or_404(conn, id)
 
-    response = http.get(url.name)
+    response = http.get(url.name, app.logger)
 
     if response:
         h1, title, description = html.get_seo_content(response.content)

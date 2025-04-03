@@ -56,6 +56,7 @@ def create_url(conn, url):
         url.id = url_id
 
     conn.commit()
+    return url
 
 
 def create_url_check(conn, url_check):
