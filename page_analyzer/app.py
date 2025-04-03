@@ -91,11 +91,7 @@ def urls_post():
 @app.route('/urls/<int:id>')
 def urls_show(id):
     with db.connection(DATABASE_URL) as conn:
-        url = db.get_url_by_id(conn, id)
-
-        if not url:
-            abort(404)
-
+        url = get_url_or_404(conn, id)
         url_checks = db.get_checks_for_url(conn, url.id)
 
     messages = get_flashed_messages(with_categories=True)
@@ -111,10 +107,7 @@ def urls_show(id):
 @app.route('/urls/<id>/checks', methods=['POST'])
 def checks_post(id):
     with db.connection(DATABASE_URL) as conn:
-        url = db.get_url_by_id(conn, id)
-
-    if not url:
-        abort(404)
+        url = get_url_or_404(conn, id)
 
     response = http.get_response(url.name)
 
@@ -154,3 +147,12 @@ def normalize_url(url):
     netloc = parsed.netloc.lower()
 
     return f"{scheme}://{netloc}"
+
+
+def get_url_or_404(conn, id):
+    url = db.get_url_by_id(conn, id)
+
+    if not url:
+        abort(404)
+
+    return url
