@@ -9,7 +9,7 @@ class Response:
     content: str
 
 
-def get_response(url_name):
+def get(url_name):
     try:
         resp = requests.get(url_name, timeout=10)
         resp.raise_for_status()
